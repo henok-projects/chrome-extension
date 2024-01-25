@@ -1,88 +1,94 @@
-function readWhatsAppMessages() {
-  // This function needs to be adapted to the actual structure of WhatsApp Web.
-  const messages = [];
-  const messageElements = document.querySelectorAll(
-    ".message-in, .message-out"
+/////////////////// function to extractMessages //////////////////////////
+function extractMessages() {
+  const messageContainers = document.querySelectorAll(
+    '.copyable-text[data-lexical-text="true"]'
   );
-  messageElements.forEach((messageElement) => {
-    // Extract text content or any other relevant data from message elements
-    const messageText =
-      messageElement.querySelector(".copyable-text").textContent;
-    messages.push(messageText);
+}
+
+// Run the extractMessages function when the script is loaded
+extractMessages();
+
+// Set up a MutationObserver to watch for changes if new messages appear dynamically
+const observer = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    if (mutation.addedNodes) {
+      extractMessages(); // Re-run the extractMessages function to get new messages
+    }
   });
-  return messages;
-}
+});
 
-function sendWhatsAppMessage(message) {
-  // This function simulates typing a message into the WhatsApp Web input field and pressing enter to send.
-  const inputField = document.querySelector('div[contenteditable="true"]');
-  if (inputField) {
-    // Focus the input field
-    inputField.focus();
-    // Dispatch input event for each character in the message
-    message.split("").forEach((char) => {
-      const event = new InputEvent("input", { bubbles: true });
-      inputField.textContent += char;
-      inputField.dispatchEvent(event);
-    });
-    // Dispatch the enter key event to send the message
-    const enterEvent = new KeyboardEvent("keydown", {
-      bubbles: true,
-      key: "Enter",
-      keyCode: 13,
-      which: 13,
-    });
-    inputField.dispatchEvent(enterEvent);
-  }
-}
+// Start observing the document for changes in the DOM
+const config = { childList: true, subtree: true };
+observer.observe(document, config);
 
-function readSkypeMessages() {
+/////////////////// function to read sentout messages //////////////////////////
+function extractWhatsAppMessages() {
   const messages = [];
-  const messageElements = document.querySelectorAll(".messageBubbleContent"); // Placeholder selectors
-  messageElements.forEach((messageElement) => {
-    messages.push(messageElement.textContent);
+  // Query for message elements
+  document.querySelectorAll(".copyable-text span").forEach((span) => {
+    // Check if the message text matches not empty
+    if (span.textContent != "") {
+      messages.push(span.textContent);
+    }
   });
   return messages;
 }
 
-function sendSkypeMessage(message) {
-  const inputField = document.querySelector(".send-message-textarea");
-  if (inputField) {
-    inputField.value = message;
-    const event = new Event("input", { bubbles: true });
-    inputField.dispatchEvent(event);
-    const sendButton = document.querySelector(".send-button-selector"); // Skype might require a button click event to send the message
-    sendButton.click();
-  }
-}
-
-function readTelegramMessages() {
-  const messages = [];
-  const messageElements = document.querySelectorAll(".im_message_text"); // Placeholder selectors
-  messageElements.forEach((messageElement) => {
-    messages.push(messageElement.textContent.trim());
-  });
-  return messages;
-}
-
-function sendTelegramMessage(message) {
-  const inputField = document.querySelector(".composer_rich_textarea"); // Placeholder
-  if (inputField) {
-    inputField.textContent = message;
-    const event = new Event("input", { bubbles: true });
-    inputField.dispatchEvent(event);
-    const sendButton = document.querySelector(".im_submit");
-    sendButton.click();
-  }
-}
-
+// Listen for the popup to request messages
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "readMessages") {
-    const messages = readWhatsAppMessages();
-    sendResponse({ messages: messages });
-  } else if (request.action === "sendMessages") {
-    sendWhatsAppMessage(request.message);
-    sendResponse({ status: "Message sent" });
+  if (request.action === "getMessages") {
+    const messages = extractWhatsAppMessages();
+    sendResponse({ messages });
   }
-  return true; // Keep the message channel open for the response
+});
+
+/////////////////// function to send a message to WhatsApp //////////////////////////
+// Define the sendMessageToWhatsApp function in content.js
+function sendMessageToWhatsApp(message) {
+  const whatsappInputField = document.querySelector(
+    'div._3Uu1_ div[data-tab="10"][contenteditable="true"]'
+  );
+
+  if (whatsappInputField) {
+    whatsappInputField.focus(); // Focus on the input field
+    document.execCommand("insertText", false, message); // Set the message
+    whatsappInputField.dispatchEvent(new Event("input", { bubbles: true })); // Dispatch input event
+    whatsappInputField.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+    ); // Press Enter to send the message
+  }
+}
+
+// Listen for messages from the popup script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "sendMessageToWhatsApp") {
+    sendMessageToWhatsApp(message.message);
+  }
+});
+
+////////////////// Read message status //////////////////////
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.action === "checkStatus") {
+    let statusElement = document.querySelector('[data-icon="msg-dblcheck"]');
+    let status = "Not Found";
+
+    // Check if the status element is found
+    if (statusElement) {
+      // Check the aria-label attribute for the status (trim and make it case-insensitive)
+      let ariaLabel = statusElement
+        .getAttribute("aria-label")
+        .trim()
+        .toLowerCase();
+
+      if (ariaLabel === "read") {
+        status = "Read";
+      } else if (ariaLabel === "sent") {
+        status = "Sent";
+      } else if (ariaLabel === "delivered") {
+        status = "Delivered";
+      }
+    }
+
+    sendResponse({ status: status });
+  }
 });

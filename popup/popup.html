@@ -2,17 +2,51 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Message Intercepter</title>
-    <link rel="stylesheet" href="bulma.min.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WhatsApp Extension</title>
     <style>
       body {
         width: 300px;
         padding: 10px;
+        font-family: Arial, sans-serif;
+      }
+      #messages {
+        margin-top: 10px;
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 5px;
       }
     </style>
   </head>
   <body>
-    <button class="container m-3" id="checkMessages">Check Messages</button>
+    <h2>WhatsApp Web Extension</h2>
+    <div>
+      <button id="scanMessages">Scan for New Messages</button>
+      <div id="messages"></div>
+    </div>
+
+    <!-- to send message from chrome extesion to whatsapp -->
+    <div>
+      <label for="messageInput">Message:</label>
+      <input type="text" id="messageInput" placeholder="Enter your message" />
+      <button id="sendMessageButton">Send</button>
+    </div>
+
+    <!-- fetch sentout message -->
+    <div>
+      <button id="fetchMessages">Fetch Messages</button>
+      <textarea id="messagesDisplay" readonly></textarea>
+    </div>
+    <!-- send message to fastapi -->
+    <div>
+      <button id="sendToFastAPI">Send to fastAPI</button>
+    </div>
+    <!-- checkStatus -->
+    <div>
+      <button id="checkStatus">Check Status</button>
+      <div id="status"></div>
+    </div>
     <script src="popup.js"></script>
   </body>
 </html>
