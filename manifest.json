@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Message Interceptor",
+  "description": "Intercept and decode messages on WhatsApp Web, Skype, and Telegram.Save incoming and outgoing messages to a database",
+  "version": "1.0",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://web.whatsapp.com/*",
+        "*://web.skype.com/*",
+        "*://web.telegram.org/*"
+      ],
+      "js": ["content.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "icons": {
+    "16": "images/icon-16.png",
+    "32": "images/icon-32.png",
+    "64": "images/icon-64.png",
+    "128": "images/icon-128.png"
+  }
+}
