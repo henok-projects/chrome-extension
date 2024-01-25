@@ -42,26 +42,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-/////////////////// function to send a message to WhatsApp //////////////////////////
-// Define the sendMessageToWhatsApp function in content.js
 function sendMessageToWhatsApp(message) {
   const whatsappInputField = document.querySelector(
     'div._3Uu1_ div[data-tab="10"][contenteditable="true"]'
   );
+  const sendButton = document.querySelector('button[aria-label="Send"]'); // Selector for the send button, adjust if necessary
 
-  if (whatsappInputField) {
+  if (whatsappInputField && sendButton && message.trim() !== "") {
     whatsappInputField.focus(); // Focus on the input field
     document.execCommand("insertText", false, message); // Set the message
     whatsappInputField.dispatchEvent(new Event("input", { bubbles: true })); // Dispatch input event
-    whatsappInputField.dispatchEvent(
-      new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
-    ); // Press Enter to send the message
+
+    // Check if the input field has content after inserting the message
+    if (whatsappInputField.textContent.trim() !== "") {
+      sendButton.click(); // Click the send button to send the message
+    }
   }
 }
 
 // Listen for messages from the popup script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "sendMessageToWhatsApp") {
+  if (
+    message.action === "sendMessageToWhatsApp" &&
+    message.message.trim() !== ""
+  ) {
     sendMessageToWhatsApp(message.message);
   }
 });

@@ -99,10 +99,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 ///////////////////////////////////////// fetchMessages /////////////////////////////////////////////////
 document.addEventListener("DOMContentLoaded", () => {
-  const fetchMessagesButton = document.getElementById("fetchMessages"); // Your button to fetch messages
   const messagesDisplay = document.getElementById("messagesDisplay"); // Your field to display messages
 
-  fetchMessagesButton.addEventListener("click", () => {
+  // Define a function to fetch and display messages
+  function fetchAndDisplayMessages() {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       chrome.tabs.sendMessage(
         tabs[0].id,
@@ -115,7 +115,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       );
     });
-  });
+  }
+
+  // Call the function to fetch messages when DOM is loaded
+  fetchAndDisplayMessages();
 });
 
 ///////////////////////// Function to send messages and statuses to FastAPI ////////////////////////
