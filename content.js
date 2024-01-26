@@ -1,3 +1,55 @@
+function getAllChatMessages() {
+  // This will hold all the chat messages
+  let chatMessages = [];
+
+  // Find all messages on the page
+  document
+    .querySelectorAll(".message-in, .message-out")
+    .forEach((messageBlock) => {
+      let preText = messageBlock
+        .querySelector(".copyable-text")
+        .getAttribute("data-pre-plain-text");
+      let message = messageBlock.querySelector(".selectable-text").innerText;
+      let time = preText.match(/\[(.*?)\]/)[1];
+      let phone = preText.split("] ")[1].split(": ")[0];
+      let statusElement = messageBlock.querySelector(
+        '[data-icon="msg-dblcheck"]'
+      );
+      let status = "Sent";
+      if (statusElement) {
+        let ariaLabel = statusElement
+          .getAttribute("aria-label")
+          .trim()
+          .toLowerCase();
+
+        if (ariaLabel === "read") {
+          status = "Read";
+        } else if (ariaLabel === "sent") {
+          status = "Sent";
+        } else if (ariaLabel === "delivered") {
+          status = "Delivered";
+        }
+      }
+
+      chatMessages.push({
+        phone: phone,
+        time: time,
+        message: message,
+        status: status,
+      });
+    });
+
+  return chatMessages;
+}
+
+// Listening for a message from the popup to send back the chat messages
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.command === "fetchMessages") {
+    const messages = getAllChatMessages();
+    sendResponse({ messages: messages });
+  }
+});
+
 /////////////////// function to extractMessages //////////////////////////
 function extractMessages() {
   const messageContainers = document.querySelectorAll(
@@ -48,6 +100,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+//////////////// Send message from chrome to Whatsapp ////////////////////
 function sendMessageToWhatsApp(message) {
   const whatsappInputField = document.querySelector(
     'div._3Uu1_ div[data-tab="10"][contenteditable="true"]'
@@ -60,7 +113,8 @@ function sendMessageToWhatsApp(message) {
     whatsappInputField.dispatchEvent(new Event("input", { bubbles: true })); // Dispatch input event
 
     if (whatsappInputField.textContent.trim() !== "") {
-      sendButton.click(); // Click the send button to send the message
+      sendButton.click();
+      // Click the send button to send the message
     }
   }
 }
@@ -72,6 +126,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     message.message.trim() !== ""
   ) {
     sendMessageToWhatsApp(message.message);
+    document.querySelector('span[data-icon="send"]').click();
   }
 });
 
@@ -115,6 +170,16 @@ function extractMessages() {
 
   return messages;
 }
+
+const observe = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    if (mutation.addedNodes.length > 0) {
+      extractMessages(); // Correct function name
+    }
+  });
+});
+
+observe.observe(document.body, { childList: true, subtree: true });
 
 ///////// Skype message listener /////////////////
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
@@ -164,3 +229,45 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
   }
 });
+
+function extractWhatsAppMessages() {
+  // This function will extract messages and their details from WhatsApp Web
+  let messages = [];
+
+  document.querySelectorAll('[role="row"]').forEach((row) => {
+    // Check if the row is a message row
+    if (row.querySelector("[data-pre-plain-text]")) {
+      const messageBlock = row.querySelector(".copyable-text");
+      const messageText = messageBlock ? messageBlock.textContent.trim() : null;
+      const preText = messageBlock.getAttribute("data-pre-plain-text");
+
+      // Extracting timestamp, sender name/number, and check for message status indicators
+      let timestamp = preText.match(/\[(.*?)\]/)[1];
+      let sender = preText.split("] ")[1].split(": ")[0];
+      let messageStatus = "sent"; // Default status
+
+      // Check for read receipts
+      if (row.querySelector('[data-icon="msg-dblcheck-ack"]')) {
+        messageStatus = "read";
+      } else if (row.querySelector('[data-icon="msg-dblcheck"]')) {
+        messageStatus = "delivered";
+      } else if (row.querySelector('[data-icon="msg-check"]')) {
+        messageStatus = "sent";
+      }
+
+      messages.push({
+        text: messageText,
+        timestamp: timestamp,
+        sender: sender,
+        status: messageStatus,
+      });
+    }
+  });
+
+  return messages;
+}
+
+// Convert to JSON and log to console
+const messages = extractWhatsAppMessages();
+const messagesJson = JSON.stringify(messages);
+console.log("the datas are", messagesJson);

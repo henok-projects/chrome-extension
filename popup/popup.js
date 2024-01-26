@@ -210,6 +210,46 @@ function sendMessageToSkype(message) {
   }
 }
 
+document.getElementById("getMessage").addEventListener("click", () => {
+  // Query the active tab, which will be the one the user is currently looking at
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    // Send a message to the content script in the active tab
+    chrome.tabs.sendMessage(
+      tabs[0].id,
+      { command: "fetchMessages" },
+      (response) => {
+        if (response && response.messages) {
+          const messageInfo = document.getElementById("messageInfo");
+          messageInfo.value = response.messages
+            .map(
+              (m) =>
+                `Phone: ${m.phone}\nTime: ${m.time}\nMessage: ${m.message}\nStatus: ${m.status}\n\n`
+            )
+            .join("");
+        }
+      }
+    );
+  });
+});
+
+function scrapeWhatsAppMessage() {
+  const messageElement = document.querySelector(
+    ".copyable-text[data-pre-plain-text]"
+  );
+  if (messageElement) {
+    const preText = messageElement.getAttribute("data-pre-plain-text");
+    const phone = preText.match(/\[.*?\]\s(.+?):/)[1];
+    const time = preText.match(/\[(.*?)\]/)[1];
+    const status = messageElement.getElementById("status").innerText;
+
+    const message = messageElement
+      .querySelector("span.selectable-text")
+      .textContent.trim();
+    return { phone, time, message, status };
+  }
+  return null;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const sendMessageButton = document.getElementById("sendMessageButton"); // Ensure you have this button in your popup.html
   const messageInput = document.getElementById("messageInput"); // And this input field
