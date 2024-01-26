@@ -21,16 +21,22 @@ const observer = new MutationObserver((mutations) => {
 const config = { childList: true, subtree: true };
 observer.observe(document, config);
 
-/////////////////// function to read sentout messages //////////////////////////
+/////////////////// function to fetch and display messages/chat history //////////////////////////
 function extractWhatsAppMessages() {
   const messages = [];
+  const seen = new Set(); // Set to keep track of seen messages
+
   // Query for message elements
   document.querySelectorAll(".copyable-text span").forEach((span) => {
-    // Check if the message text matches not empty
-    if (span.textContent != "") {
-      messages.push(span.textContent);
+    const text = span.textContent.trim();
+
+    // Check if the message text is not empty and not already seen
+    if (text && !seen.has(text)) {
+      seen.add(text); // Mark this message as seen
+      messages.push(text);
     }
   });
+
   return messages;
 }
 
@@ -53,14 +59,13 @@ function sendMessageToWhatsApp(message) {
     document.execCommand("insertText", false, message); // Set the message
     whatsappInputField.dispatchEvent(new Event("input", { bubbles: true })); // Dispatch input event
 
-    // Check if the input field has content after inserting the message
     if (whatsappInputField.textContent.trim() !== "") {
       sendButton.click(); // Click the send button to send the message
     }
   }
 }
 
-// Listen for messages from the popup script
+//////////////////////// Listen for messages from the popup script /////////////////////////
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (
     message.action === "sendMessageToWhatsApp" &&
@@ -75,10 +80,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === "checkStatus") {
     let statusElement = document.querySelector('[data-icon="msg-dblcheck"]');
     let status = "Not Found";
-
-    // Check if the status element is found
     if (statusElement) {
-      // Check the aria-label attribute for the status (trim and make it case-insensitive)
       let ariaLabel = statusElement
         .getAttribute("aria-label")
         .trim()
@@ -94,5 +96,71 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     }
 
     sendResponse({ status: status });
+  }
+});
+
+///////////////////// Extract Skype messages //////////////////////
+function extractMessages() {
+  const messages = [];
+  const messageElements = document.querySelectorAll(
+    'div[role="none"] > div[role="none"] > div[dir="auto"]'
+  );
+
+  messageElements.forEach((element) => {
+    const message = element.textContent.trim(); // Extracting the text content
+    if (message) {
+      messages.push(message);
+    }
+  });
+
+  return messages;
+}
+
+///////// Skype message listener /////////////////
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.message === "fetchChatHistory") {
+    const chatHistory = extractMessages(); // Assume this function exists and fetches chat messages
+    sendResponse({ chatHistory: chatHistory });
+  }
+});
+
+const chatMessages = extractMessages();
+console.log(chatMessages);
+
+/////////// Handle Dynamic Content Loading //////
+const observers = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    if (mutation.addedNodes.length > 0) {
+      const newMessages = extractMessages();
+      console.log(newMessages);
+    }
+  });
+});
+
+const configs = { childList: true, subtree: true };
+
+const targetNode = document.querySelector('div[role="main"]'); // You might need to adjust this selector
+if (targetNode) {
+  observers.observe(targetNode, configs);
+}
+
+/////////////// send message automatically to Skype //////////////////////////////////
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.text) {
+    // Insert the message into the chat input field
+    const inputSelector =
+      'div.public-DraftEditor-content[contenteditable="true"]'; // Adjust as needed
+    const inputField = document.querySelector(inputSelector);
+    if (inputField) {
+      inputField.focus();
+      document.execCommand("insertText", false, msg.text);
+    }
+
+    // Find and click the send button
+    const sendButtonSelector = 'button[title="Send message"][role="button"]';
+    const sendButton = document.querySelector(sendButtonSelector);
+    if (sendButton) {
+      sendButton.click();
+    }
   }
 });

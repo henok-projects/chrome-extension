@@ -3,49 +3,116 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WhatsApp Extension</title>
+    <title>WhatsApp & Skype Extension</title>
     <style>
       body {
-        width: 300px;
-        padding: 10px;
-        font-family: Arial, sans-serif;
+        width: 350px;
+        padding: 20px;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f9f9f9;
+        color: #333;
       }
-      #messages {
+
+      h2 {
+        color: #4a76a8;
+        font-size: 22px;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      button {
+        background-color: #4a76a8;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
         margin-top: 10px;
-        max-height: 200px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-size: 14px;
+      }
+
+      button:hover {
+        background-color: #3a5a78;
+      }
+
+      #messages {
+        width: 90%;
+        height: 50px;
         overflow-y: auto;
         border: 1px solid #ddd;
-        padding: 5px;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #fff;
+        margin-top: 10px;
+      }
+
+      #chatHistory,
+      #messagesDisplay {
+        width: 90%;
+        height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #fff;
+        margin-top: 10px;
+      }
+
+      #messageInput {
+        width: calc(100% - 22px);
+        padding: 10px;
+        margin-top: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+
+      div {
+        background-color: #fff;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
       }
     </style>
   </head>
   <body>
-    <h2>WhatsApp Web Extension</h2>
+    <h2>WhatsApp & Skype Extension</h2>
+
     <div>
       <button id="scanMessages">Scan for New Messages</button>
       <div id="messages"></div>
     </div>
 
-    <!-- to send message from chrome extesion to whatsapp -->
     <div>
       <label for="messageInput">Message:</label>
       <input type="text" id="messageInput" placeholder="Enter your message" />
       <button id="sendMessageButton">Send</button>
     </div>
 
-    <!-- fetch sentout message -->
     <div>
+      <label for="chatHistory">WhatsApp fetch user chat history</label>
       <textarea id="messagesDisplay" readonly></textarea>
     </div>
-    <!-- send message to fastapi -->
-    <div>
-      <button id="sendToFastAPI">Send to fastAPI</button>
-    </div>
-    <!-- checkStatus -->
     <div>
       <button id="checkStatus">Check Status</button>
       <div id="status"></div>
     </div>
+
+    <div>
+      <label for="chatHistory">Skype fetch user chat history</label>
+      <textarea id="chatHistory"></textarea>
+    </div>
+
+    <div>
+      <button id="sendToFastAPI">Send to FastAPI</button>
+    </div>
+
     <script src="popup.js"></script>
   </body>
 </html>

@@ -101,7 +101,6 @@ document.addEventListener("DOMContentLoaded", () => {
 document.addEventListener("DOMContentLoaded", () => {
   const messagesDisplay = document.getElementById("messagesDisplay"); // Your field to display messages
 
-  // Define a function to fetch and display messages
   function fetchAndDisplayMessages() {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       chrome.tabs.sendMessage(
@@ -123,8 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 ///////////////////////// Function to send messages and statuses to FastAPI ////////////////////////
 function sendMessagesAndStatusToFastAPI(messages, statuses) {
-  // Define the URL of your FastAPI endpoint
-  const apiUrl = "http://your-fastapi-server/api/send_messages_and_status";
+  const fastAPIUrl = "http://your-fastapi-server/api/send_messages_and_status";
 
   // Create a request object
   const request = {
@@ -149,7 +147,7 @@ function sendMessagesAndStatusToFastAPI(messages, statuses) {
     });
 }
 
-// Listen for messages from content.js
+////////////////////// Listen for messages from content.js /////////////////////
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "sendMessagesAndStatus") {
     const messages = request.messages;
@@ -170,5 +168,66 @@ document.getElementById("checkStatus").addEventListener("click", function () {
         document.getElementById("status").innerText = response.status;
       }
     );
+  });
+});
+
+////////////////////////////// fetch Skype chat history //////////////////////
+document.addEventListener("DOMContentLoaded", function () {
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    chrome.tabs.sendMessage(
+      tabs[0].id,
+      { message: "fetchChatHistory" },
+      function (response) {
+        if (response && response.chatHistory) {
+          document.getElementById("chatHistory").value =
+            response.chatHistory.join("\n");
+        }
+      }
+    );
+  });
+});
+
+////////////////////////// Function to send a message to the Skype content script /////////////////////
+function sendMessageToSkype(message) {
+  const inputSelector =
+    'div.public-DraftEditor-content[contenteditable="true"]';
+  const inputField = document.querySelector(inputSelector);
+
+  if (inputField) {
+    // Focus on the input field
+    inputField.focus();
+
+    // Simulate typing the message
+    document.execCommand("insertText", false, message);
+
+    // Trigger input event
+    inputField.dispatchEvent(new Event("input", { bubbles: true }));
+
+    // Press Enter to send the message
+    inputField.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+    );
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const sendMessageButton = document.getElementById("sendMessageButton"); // Ensure you have this button in your popup.html
+  const messageInput = document.getElementById("messageInput"); // And this input field
+
+  sendMessageButton.addEventListener("click", () => {
+    const messageToSend = messageInput.value;
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const activeTab = tabs[0];
+      chrome.scripting.executeScript(
+        {
+          target: { tabId: activeTab.id },
+          function: sendMessageToSkype,
+          args: [messageToSend],
+        },
+        () => {
+          console.log("Message sent to Skype");
+        }
+      );
+    });
   });
 });

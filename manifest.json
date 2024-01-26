@@ -11,7 +11,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://web.whatsapp.com/*"],
+      "matches": ["https://web.whatsapp.com/*", "https://web.skype.com/*"],
       "js": ["content.js"]
     }
   ],
